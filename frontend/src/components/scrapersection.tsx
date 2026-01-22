@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button"; // Existing
 import { Input } from "@/components/ui/input";   // Newly installed
 
-const ScrapePanel: React.FC = () => {
+const ScraperSection: React.FC = () => {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -11,7 +11,7 @@ const ScrapePanel: React.FC = () => {
     setLoading(true);
     
     try {
-      const response = await fetch("http://localhost:8000/api/scrape", {
+      const response = await fetch("http://13.232.82.217:8000/api/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url })
@@ -51,4 +51,4 @@ const ScrapePanel: React.FC = () => {
   );
 };
 
-export default ScrapePanel;
+export default ScraperSection;

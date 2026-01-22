@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import TokenizerDisplay from "./TokenizerDisplay";
-import ScrapePanel from "./ScrapePanel"; 
+import TokenizerDisplay from "./tokenizerdisplay";
+import ScraperSection from "./scrapersection";
+
 
 interface TokenData {
   text: string;
@@ -20,7 +21,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchInitialVocab = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/vocab-size");
+        const response = await fetch("http://13.232.82.217:8000/api/vocab-size");
         const data = await response.json();
         setVocabSize(data.vocab_size);
       } catch (err) {
@@ -32,7 +33,7 @@ const HomePage = () => {
   }, []); // Empty dependency array means "run once on mount"
 
   useEffect(() => {
-    socket.current = new WebSocket("ws://localhost:8000/ws/tokenize");
+    socket.current = new WebSocket("ws://13.232.82.217:8000/ws/tokenize");
 
     socket.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -69,7 +70,7 @@ const HomePage = () => {
         <section className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start border-b border-zinc-800 pb-6 mb-2">
           {/* URL Scraper Box */}
           <div className="md:col-span-3">
-             <ScrapePanel />
+             < ScraperSection/>
           </div>
 
           {/* Real-time Vocab Stat Card */}
