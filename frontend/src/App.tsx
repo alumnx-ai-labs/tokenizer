@@ -1,6 +1,6 @@
 // App.tsx
 import Header from "./components/header";
-import HomePage from "./components/homepage";
+import HomePage from "./components/homePage";
 
 function App() {
   return (
