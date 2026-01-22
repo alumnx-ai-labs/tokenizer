@@ -11,7 +11,7 @@ const ScraperSection: React.FC = () => {
     setLoading(true);
     
     try {
-      const response = await fetch("http://13.232.82.217:8000/api/scrape", {
+      const response = await fetch("https://my-tokenizer.duckdns.org/api/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url })

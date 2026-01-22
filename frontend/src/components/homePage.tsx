@@ -21,7 +21,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchInitialVocab = async () => {
       try {
-        const response = await fetch("http://13.232.82.217:8000/api/vocab-size");
+        const response = await fetch("https://my-tokenizer.duckdns.org/api/vocab-size");
         const data = await response.json();
         setVocabSize(data.vocab_size);
       } catch (err) {
@@ -33,7 +33,7 @@ const HomePage = () => {
   }, []); // Empty dependency array means "run once on mount"
 
   useEffect(() => {
-    socket.current = new WebSocket("ws://13.232.82.217:8000/ws/tokenize");
+    socket.current = new WebSocket("wss://my-tokenizer.duckdns.org/ws/tokenize");
 
     socket.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
