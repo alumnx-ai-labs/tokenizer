@@ -14,9 +14,12 @@ import tiktoken
 
 app = FastAPI(title="Tokenizer Demo API")
 
+_frontend_url = os.environ.get("FRONTEND_URL", "")
+_origins = [o for o in ["http://localhost:5173", "http://localhost:3000", _frontend_url] if o]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

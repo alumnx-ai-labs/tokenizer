@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import TokenizerPanel from './components/TokenizerPanel';
 import './index.css';
 
-const API = '';
+const API = import.meta.env.VITE_API_URL || '';
 
 const EXAMPLE_TEXT =
   "I had always thought Jack Gisburn rather a cheap genius--though a good fellow enough--so it was no great surprise to me to hear that, in the height of his glory, he had dropped his painting.";
