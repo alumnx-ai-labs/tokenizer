@@ -101,8 +101,8 @@ export default function App() {
         <p style={{ maxWidth: '720px', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.7 }}>
           Language models process text as <strong style={{ color: 'var(--text-primary)' }}>tokens</strong> — common sequences of characters.
           Enter any text below to compare how a{' '}
-          <strong style={{ color: '#5c8fd9' }}>Simple regex tokeniser</strong> (vocabulary built from{' '}
-          <em>The Verdict</em> by Edith Wharton) handles it versus{' '}
+          <strong style={{ color: '#5c8fd9' }}>Simple regex tokeniser</strong> (vocabulary built from a{' '}
+          corpus of classic literature and football books) handles it versus{' '}
           <strong style={{ color: '#9c7dce' }}>TikToken</strong> — OpenAI's production BPE tokeniser.
         </p>
         {vocabInfo && (
@@ -289,8 +289,8 @@ export default function App() {
         gap: '8px',
       }}>
         <span>
-          Simple Tokeniser vocabulary built from{' '}
-          <em>The Verdict</em> by Edith Wharton · TikToken cl100k_base (GPT-4/3.5)
+          Simple Tokeniser vocabulary built from a multi-book public-domain
+          corpus · TikToken cl100k_base (GPT-4/3.5)
         </span>
         <span>Confidential | 7EDGE</span>
       </footer>

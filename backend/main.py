@@ -34,6 +34,7 @@ VERDICT_URL = (
     "refs/heads/main/ch02/01_main-chapter-code/the-verdict.txt"
 )
 VERDICT_PATH = os.path.join(os.path.dirname(__file__), "the-verdict.txt")
+CORPUS_PATH = os.path.join(os.path.dirname(__file__), "corpus.txt")
 
 word_to_id: dict[str, int] = {}
 id_to_word: dict[int, str] = {}
@@ -48,10 +49,14 @@ def _tokenize_regex(text: str) -> list[str]:
 def _build_vocab() -> None:
     global word_to_id, id_to_word, vocab_size_simple
 
-    if not os.path.exists(VERDICT_PATH):
-        urllib.request.urlretrieve(VERDICT_URL, VERDICT_PATH)
+    if os.path.exists(CORPUS_PATH):
+        source_path = CORPUS_PATH
+    else:
+        if not os.path.exists(VERDICT_PATH):
+            urllib.request.urlretrieve(VERDICT_URL, VERDICT_PATH)
+        source_path = VERDICT_PATH
 
-    with open(VERDICT_PATH, "r", encoding="utf-8") as f:
+    with open(source_path, "r", encoding="utf-8") as f:
         raw_text = f.read()
 
     all_tokens = _tokenize_regex(raw_text)
