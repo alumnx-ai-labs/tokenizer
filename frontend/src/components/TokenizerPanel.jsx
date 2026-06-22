@@ -89,7 +89,7 @@ export default function TokenizerPanel({ result, isSimple }) {
         </div>
         <p style={{ fontSize: '12px', color: 'var(--text-secondary)', paddingLeft: '18px' }}>
           {isSimple
-            ? 'Regex-based · "The Verdict" corpus · handles unknown tokens as <UNK>'
+            ? 'Regex-based · Combined books corpus · handles unknown tokens as <UNK>'
             : 'BPE sub-word · cl100k_base (GPT-4/3.5) · never produces <UNK>'}
         </p>
       </div>
@@ -192,7 +192,7 @@ export default function TokenizerPanel({ result, isSimple }) {
           color: 'var(--tok-unk-fg)',
         }}>
           <strong>⚠ {unkCount} unknown token{unkCount > 1 ? 's' : ''}</strong>
-          {' '}— words not present in "The Verdict" vocabulary are mapped to <code style={{ fontSize: '11px' }}>&lt;UNK&gt;</code> (ID {result.tokens.find(t => t.is_unk)?.token_id ?? '—'})
+          {' '}— words not present in the corpus vocabulary are mapped to <code style={{ fontSize: '11px' }}>&lt;UNK&gt;</code> (ID {result.tokens.find(t => t.is_unk)?.token_id ?? '—'})
         </div>
       )}
     </div>

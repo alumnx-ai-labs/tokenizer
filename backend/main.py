@@ -26,14 +26,10 @@ app.add_middleware(
 )
 
 # ──────────────────────────────────────────────────────────
-# Simple Tokenizer — built from The Verdict dataset
+# Simple Tokenizer — built from the combined books corpus
 # ──────────────────────────────────────────────────────────
 
-VERDICT_URL = (
-    "https://raw.githubusercontent.com/rasbt/LLMs-from-scratch/"
-    "refs/heads/main/ch02/01_main-chapter-code/the-verdict.txt"
-)
-VERDICT_PATH = os.path.join(os.path.dirname(__file__), "the-verdict.txt")
+COMBINED_PATH = os.path.join(os.path.dirname(__file__), "combined-corpus.txt")
 
 word_to_id: dict[str, int] = {}
 id_to_word: dict[int, str] = {}
@@ -48,10 +44,11 @@ def _tokenize_regex(text: str) -> list[str]:
 def _build_vocab() -> None:
     global word_to_id, id_to_word, vocab_size_simple
 
-    if not os.path.exists(VERDICT_PATH):
-        urllib.request.urlretrieve(VERDICT_URL, VERDICT_PATH)
+    if not os.path.exists(COMBINED_PATH):
+        from build_corpus import download_and_clean
+        download_and_clean()
 
-    with open(VERDICT_PATH, "r", encoding="utf-8") as f:
+    with open(COMBINED_PATH, "r", encoding="utf-8") as f:
         raw_text = f.read()
 
     all_tokens = _tokenize_regex(raw_text)
