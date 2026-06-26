@@ -95,6 +95,12 @@ class TokenizeResponse(BaseModel):
     simple: TokenizerResult
     tiktoken: TokenizerResult
 
+class ReviewTokensRequest(BaseModel):
+    text: str
+
+class ReviewTokensResponse(BaseModel):
+    existing: list[str]
+    new_tokens: list[str]
 
 # ──────────────────────────────────────────────────────────
 # Routes
@@ -113,28 +119,69 @@ def vocab_info():
         "tiktoken_encoding": "cl100k_base",
     }
 
+@app.post(
+    "/api/review-tokens",
+    response_model=ReviewTokensResponse
+)
+def review_tokens(req: ReviewTokensRequest):
+    text = req.text.strip()
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+
+    candidate_tokens = sorted(set(_tokenize_regex(text)))
+
+    existing = []
+    new_tokens = []
+
+    for token in candidate_tokens:
+        if token in word_to_id:
+            existing.append(token)
+        else:
+            new_tokens.append(token)
+
+    return ReviewTokensResponse(
+        existing=existing,
+        new_tokens=new_tokens,
+    )
 
 @app.post("/api/tokenize", response_model=TokenizeResponse)
 def tokenize(req: TokenizeRequest):
     text = req.text
+
     if not text:
         raise HTTPException(status_code=400, detail="text must not be empty")
 
-    # — Simple tokenizer —
+    # Simple tokenizer
     raw_tokens = _tokenize_regex(text)
     simple_tokens: list[TokenInfo] = []
+
     for tok in raw_tokens:
         is_unk = tok not in word_to_id
         tid = word_to_id.get(tok, word_to_id["<UNK>"])
-        simple_tokens.append(TokenInfo(token=tok, token_id=tid, is_unk=is_unk))
+        simple_tokens.append(
+            TokenInfo(
+                token=tok,
+                token_id=tid,
+                is_unk=is_unk,
+            )
+        )
 
-    # — TikToken —
+    # TikToken
     tt_ids = tiktoken_enc.encode(text)
     tiktoken_tokens: list[TokenInfo] = []
+
     for tid in tt_ids:
         token_bytes = tiktoken_enc.decode_single_token_bytes(tid)
         token_str = token_bytes.decode("utf-8", errors="replace")
-        tiktoken_tokens.append(TokenInfo(token=token_str, token_id=tid, is_unk=False))
+
+        tiktoken_tokens.append(
+            TokenInfo(
+                token=token_str,
+                token_id=tid,
+                is_unk=False,
+            )
+        )
 
     return TokenizeResponse(
         character_count=len(text),
@@ -151,8 +198,6 @@ def tokenize(req: TokenizeRequest):
             tokenizer_name="TikToken (cl100k_base)",
         ),
     )
-
-
 @app.get("/api/example-text")
 def example_text():
     return {
@@ -161,4 +206,27 @@ def example_text():
             "though a good fellow enough--so it was no great surprise to me "
             "to hear that, in the height of his glory, he had dropped his painting."
         )
+    }
+
+@app.post("/api/review-tokens")
+def review_tokens(req: ReviewTokensRequest):
+    text = req.text.strip()
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+
+    candidate_tokens = sorted(set(_tokenize_regex(text)))
+
+    existing = []
+    new_tokens = []
+
+    for token in candidate_tokens:
+        if token in word_to_id:
+            existing.append(token)
+        else:
+            new_tokens.append(token)
+
+    return {
+        "existing": existing,
+        "new_tokens": new_tokens
     }
