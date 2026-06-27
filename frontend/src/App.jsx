@@ -16,6 +16,32 @@ function useDebounce(value, delay) {
   return debounced;
 }
 
+function WordSample({ label, color, words }) {
+  const MAX = 40;
+  const shown = words.slice(0, MAX);
+  return (
+    <div>
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+        {label}{words.length > MAX ? ` (showing ${MAX} of ${words.length})` : ''}
+      </div>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+        {shown.map((w, i) => (
+          <code key={i} style={{
+            fontSize: '12px',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            background: 'var(--surface-2)',
+            border: `1px solid ${color}`,
+            color,
+          }}>
+            {w}
+          </code>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [text, setText] = useState('');
   const [result, setResult] = useState(null);
@@ -25,12 +51,60 @@ export default function App() {
   const debouncedText = useDebounce(text, 300);
   const abortRef = useRef(null);
 
-  useEffect(() => {
+  // ── Upload state ──
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const refreshVocabInfo = useCallback(() => {
     fetch(`${API}/api/vocab-info`)
       .then(r => r.json())
       .then(setVocabInfo)
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    refreshVocabInfo();
+  }, [refreshVocabInfo]);
+
+  const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadResult(null);
+    setUploadError(null);
+
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.txt') && !lower.endsWith('.pdf')) {
+      setUploadError('Only .txt and .pdf files are supported.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setUploadError('File exceeds the 10 MB limit.');
+      e.target.value = '';
+      return;
+    }
+
+    const form = new FormData();
+    form.append('file', file);
+    setUploading(true);
+    try {
+      const r = await fetch(`${API}/api/upload`, { method: 'POST', body: form });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail || `Server error ${r.status}`);
+      setUploadResult(data);
+      refreshVocabInfo();
+    } catch (err) {
+      setUploadError(err.message || 'Upload failed.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
 
   useEffect(() => {
     if (!debouncedText.trim()) {
@@ -247,6 +321,94 @@ export default function App() {
       }}>
         <TokenizerPanel result={result?.simple ?? null} isSimple={true} />
         <TokenizerPanel result={result?.tiktoken ?? null} isSimple={false} />
+      </div>
+
+      {/* ── Expand the vocabulary (upload) ── */}
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        padding: '20px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+          <span style={{ fontSize: '20px' }}>📄</span>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+            Expand the Simple vocabulary
+          </h3>
+        </div>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.7, marginBottom: '14px' }}>
+          Upload a <strong style={{ color: 'var(--text-primary)' }}>.txt</strong> or{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>.pdf</strong> file (max 10 MB).
+          New words are reviewed against TikToken — words it recognises are{' '}
+          <strong style={{ color: '#5c8fd9' }}>admitted</strong> into the Simple vocabulary,
+          and the rest are saved to a backlog for a future BPE tokeniser.
+        </p>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.pdf"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            style={{
+              padding: '8px 18px',
+              background: uploading ? 'var(--surface-2)' : 'var(--accent)',
+              border: '1px solid var(--accent)',
+              borderRadius: 'var(--radius-sm)',
+              color: '#fff',
+              cursor: uploading ? 'default' : 'pointer',
+              fontSize: '13px',
+              fontWeight: 500,
+            }}
+          >
+            {uploading ? 'Reviewing…' : 'Choose file & upload'}
+          </button>
+        </div>
+
+        {uploadError && (
+          <div style={{
+            marginTop: '14px',
+            padding: '10px 14px',
+            background: '#2a0f0f',
+            border: '1px solid var(--danger)',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--danger)',
+            fontSize: '13px',
+          }}>
+            ⚠ {uploadError}
+          </div>
+        )}
+
+        {uploadResult && (
+          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{ padding: '4px 12px', borderRadius: '20px', background: 'var(--surface-2)', border: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                {uploadResult.candidate_count.toLocaleString()} new candidate(s)
+              </span>
+              <span style={{ padding: '4px 12px', borderRadius: '20px', background: '#1a2a3f', border: '1px solid #5c8fd9', fontSize: '12px', color: '#5c8fd9' }}>
+                {uploadResult.admitted_count.toLocaleString()} admitted
+              </span>
+              <span style={{ padding: '4px 12px', borderRadius: '20px', background: '#2a1a3f', border: '1px solid #9c7dce', fontSize: '12px', color: '#9c7dce' }}>
+                {uploadResult.rejected_count.toLocaleString()} saved for BPE
+              </span>
+              <span style={{ padding: '4px 12px', borderRadius: '20px', background: 'var(--surface-2)', border: '1px solid var(--border)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                New vocab size: {uploadResult.new_vocab_size.toLocaleString()}
+              </span>
+            </div>
+
+            {uploadResult.admitted_count > 0 && (
+              <WordSample label="Admitted into Simple vocab" color="#5c8fd9" words={uploadResult.admitted} />
+            )}
+            {uploadResult.rejected_count > 0 && (
+              <WordSample label="Saved for future BPE" color="#9c7dce" words={uploadResult.rejected} />
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Comparison insight ── */}
