@@ -36,6 +36,7 @@ VERDICT_URL = (
     "refs/heads/main/ch02/01_main-chapter-code/the-verdict.txt"
 )
 VERDICT_PATH = os.path.join(os.path.dirname(__file__), "the-verdict.txt")
+COMBINED_PATH = os.path.join(os.path.dirname(__file__), "combined-corpus.txt")
 PENDING_BPE_PATH = os.path.join(os.path.dirname(__file__), "pending_bpe_tokens.txt")
 
 word_to_id: dict[str, int] = {}
