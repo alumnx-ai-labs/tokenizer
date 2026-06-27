@@ -72,7 +72,8 @@ _build_vocab()
 # TikToken
 # ──────────────────────────────────────────────────────────
 
-tiktoken_enc = tiktoken.get_encoding("cl100k_base")
+# tiktoken_enc = tiktoken.get_encoding("cl100k_base")
+tiktoken_enc = tiktoken.get_encoding("o200k_base")
 
 # ──────────────────────────────────────────────────────────
 # Request / Response models
@@ -86,10 +87,16 @@ class AddTokensRequest(BaseModel):
     tokens: list[str]
 
 
+class BPETrainRequest(BaseModel):
+    text: str
+    num_merges: int = 20
+
+
 class TokenInfo(BaseModel):
     token: str
     token_id: int
     is_unk: bool = False
+    is_valid_new: bool = False
 
 
 class TokenizerResult(BaseModel):
@@ -135,7 +142,12 @@ def tokenize(req: TokenizeRequest):
     for tok in raw_tokens:
         is_unk = tok not in word_to_id
         tid = word_to_id.get(tok, word_to_id["<UNK>"])
-        simple_tokens.append(TokenInfo(token=tok, token_id=tid, is_unk=is_unk))
+        
+        is_valid_new = False
+        if is_unk and len(tiktoken_enc.encode(tok)) == 1:
+            is_valid_new = True
+            
+        simple_tokens.append(TokenInfo(token=tok, token_id=tid, is_unk=is_unk, is_valid_new=is_valid_new))
 
     # — TikToken —
     tt_ids = tiktoken_enc.encode(text)
@@ -240,3 +252,13 @@ def add_tokens(req: AddTokensRequest):
         "new_vocab_size": vocab_size_simple,
         "rejected_tokens": rejected_tokens
     }
+
+
+@app.post("/api/bpe/train")
+def train_bpe_endpoint(req: BPETrainRequest):
+    if not req.text:
+        raise HTTPException(status_code=400, detail="text must not be empty")
+        
+    from bpe_demo import run_bpe_training
+    merges = run_bpe_training(req.text, req.num_merges)
+    return {"merges": merges}

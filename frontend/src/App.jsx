@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import TokenizerPanel from './components/TokenizerPanel';
+import BPEDemo from './components/BPEDemo';
 import './index.css';
 
 const API = import.meta.env.VITE_API_URL || '';
@@ -352,6 +353,9 @@ export default function App() {
           )}
         </div>
       )}
+
+      {/* ── BPE Demo ── */}
+      <BPEDemo text={text} />
 
       {/* ── Footer ── */}
       <footer style={{
