@@ -43,7 +43,7 @@ npm run dev
 The Simple Tokenizer's vocabulary (≈17,500 tokens) is built from the following
 public-domain texts. The five Project Gutenberg books are downloaded, stripped
 of their Gutenberg boilerplate, and combined with *The Verdict* into
-`backend/corpus.txt` by `backend/build_corpus.py`.
+`backend/combined-corpus.txt` by `backend/build_corpus.py`.
 
 | # | Title | Source |
 |---|-------|--------|
@@ -58,11 +58,12 @@ of their Gutenberg boilerplate, and combined with *The Verdict* into
 
 ```bash
 cd backend
-python build_corpus.py   # downloads, cleans, and writes corpus.txt
+python build_corpus.py   # downloads, cleans, and writes combined-corpus.txt
 ```
 
-The backend reads `corpus.txt` at startup if present, otherwise it falls back to
-*The Verdict* alone.
+The backend builds `combined-corpus.txt` on first startup if it is missing
+(via `build_corpus.download_and_clean()`), then reads it to build the vocabulary.
+Words admitted from uploads are layered on top from `backend/extra_vocab.json`.
 
 ## Contributing
 

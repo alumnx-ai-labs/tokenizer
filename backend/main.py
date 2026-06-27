@@ -10,10 +10,11 @@ from pydantic import BaseModel
 import re
 import json
 import threading
-import urllib.request
 import os
 import tiktoken
 import fitz  # PyMuPDF
+
+from build_corpus import COMBINED_PATH, download_and_clean
 
 app = FastAPI(title="Tokenizer Demo API")
 
@@ -29,15 +30,10 @@ app.add_middleware(
 )
 
 # ──────────────────────────────────────────────────────────
-# Simple Tokenizer — built from The Verdict dataset
+# Simple Tokenizer — built from the combined books corpus
 # ──────────────────────────────────────────────────────────
 
-VERDICT_URL = (
-    "https://raw.githubusercontent.com/rasbt/LLMs-from-scratch/"
-    "refs/heads/main/ch02/01_main-chapter-code/the-verdict.txt"
-)
-VERDICT_PATH = os.path.join(os.path.dirname(__file__), "the-verdict.txt")
-CORPUS_PATH = os.path.join(os.path.dirname(__file__), "corpus.txt")
+# Base corpus is built by build_corpus.download_and_clean() into COMBINED_PATH.
 # Tokens admitted from uploads, merged into the vocab on (re)build.
 EXTRA_VOCAB_PATH = os.path.join(os.path.dirname(__file__), "extra_vocab.json")
 # Candidate words tiktoken did not recognise — queued for a future BPE tokenizer.
@@ -78,14 +74,10 @@ def _save_word_list(path: str, words: list[str]) -> None:
 def _build_vocab() -> None:
     global word_to_id, id_to_word, vocab_size_simple
 
-    if os.path.exists(CORPUS_PATH):
-        source_path = CORPUS_PATH
-    else:
-        if not os.path.exists(VERDICT_PATH):
-            urllib.request.urlretrieve(VERDICT_URL, VERDICT_PATH)
-        source_path = VERDICT_PATH
+    if not os.path.exists(COMBINED_PATH):
+        download_and_clean()
 
-    with open(source_path, "r", encoding="utf-8") as f:
+    with open(COMBINED_PATH, "r", encoding="utf-8") as f:
         raw_text = f.read()
 
     all_tokens = set(_tokenize_regex(raw_text))
