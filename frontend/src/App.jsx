@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import TokenizerPanel from './components/TokenizerPanel';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 import './index.css';
 
 const API = import.meta.env.VITE_API_URL || '';
@@ -314,6 +315,9 @@ export default function App() {
           ⚠ {error}
         </div>
       )}
+
+      {/* ── Analytics Dashboard ── */}
+      {result && <AnalyticsDashboard result={result} />}
 
       {/* ── Two-column panels ── */}
       <div style={{
