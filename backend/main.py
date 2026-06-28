@@ -72,8 +72,8 @@ _build_vocab()
 # TikToken
 # ──────────────────────────────────────────────────────────
 
-# tiktoken_enc = tiktoken.get_encoding("cl100k_base")
-tiktoken_enc = tiktoken.get_encoding("o200k_base")
+# tiktoken_enc = tiktoken.get_encoding("o200k_base")
+tiktoken_enc = tiktoken.get_encoding("cl100k_base")
 
 # ──────────────────────────────────────────────────────────
 # Request / Response models
