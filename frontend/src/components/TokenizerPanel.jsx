@@ -70,6 +70,8 @@ export default function TokenizerPanel({ result, isSimple, onTokensAdded }) {
   const unkTokens = result ? result.tokens.filter(t => t.is_unk) : [];
   const unkCount = unkTokens.length;
   const uniqueUnks = Array.from(new Set(unkTokens.map(t => t.token)));
+  const validUnks = Array.from(new Set(unkTokens.filter(t => t.is_valid_new).map(t => t.token)));
+  const invalidUnks = Array.from(new Set(unkTokens.filter(t => !t.is_valid_new).map(t => t.token)));
 
   const handleAddTokens = async () => {
     setSubmitting(true);
@@ -248,14 +250,32 @@ export default function TokenizerPanel({ result, isSimple, onTokensAdded }) {
           </div>
           {reviewing && (
             <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--tok-unk-fg)' }}>
-              <p style={{ marginBottom: '8px', fontWeight: 600 }}>The following new words will be added to the vocabulary:</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px', maxHeight: '120px', overflowY: 'auto' }}>
-                {uniqueUnks.map(word => (
-                  <span key={word} style={{ padding: '2px 6px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>
-                    {word}
-                  </span>
-                ))}
-              </div>
+              <p style={{ marginBottom: '8px', fontWeight: 600 }}>The following valid tokens will be added to the vocabulary:</p>
+              {validUnks.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px', maxHeight: '120px', overflowY: 'auto' }}>
+                  {validUnks.map(word => (
+                    <span key={word} style={{ padding: '2px 6px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: '12px', marginBottom: '12px', fontStyle: 'italic', opacity: 0.8 }}>No valid tokens found.</p>
+              )}
+
+              {invalidUnks.length > 0 && (
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ marginBottom: '8px', fontWeight: 600, color: '#ff6b6b' }}>The following invalid tokens require BPE and will be saved for training:</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '120px', overflowY: 'auto' }}>
+                    {invalidUnks.map(word => (
+                      <span key={word} style={{ padding: '2px 6px', background: 'rgba(255,0,0,0.1)', border: '1px solid #ff6b6b', borderRadius: '3px', fontFamily: 'monospace', wordBreak: 'break-all', color: '#ff6b6b' }}>
+                        {word}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleAddTokens}
                 disabled={submitting}
@@ -271,7 +291,7 @@ export default function TokenizerPanel({ result, isSimple, onTokensAdded }) {
                   opacity: submitting ? 0.7 : 1,
                 }}
               >
-                {submitting ? 'Adding...' : 'Approve & Add Tokens'}
+                {submitting ? 'Processing...' : 'Process All Tokens'}
               </button>
 
               {rejectedTokens.length > 0 && (

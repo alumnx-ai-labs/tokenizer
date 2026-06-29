@@ -306,3 +306,27 @@ class TestVocabAddEndpoint:
         r2 = client.post("/api/tokenize", json={"text": "cat"})
         # After adding, it should not be UNK
         assert r2.json()["simple"]["tokens"][0]["is_unk"] is False
+
+
+# ──────────────────────────────────────────────────────────
+# POST /api/bpe/train
+# ──────────────────────────────────────────────────────────
+
+class TestBPETrainEndpoint:
+    def test_returns_200_for_valid_input(self):
+        resp = client.post("/api/bpe/train", json={"text": "hello hello world", "num_merges": 1})
+        assert resp.status_code == 200
+
+    def test_response_contains_merges_list(self):
+        resp = client.post("/api/bpe/train", json={"text": "hello hello world", "num_merges": 1})
+        data = resp.json()
+        assert "merges" in data
+        assert isinstance(data["merges"], list)
+
+    def test_empty_text_returns_400(self):
+        resp = client.post("/api/bpe/train", json={"text": "", "num_merges": 1})
+        assert resp.status_code == 400
+
+    def test_missing_text_returns_422(self):
+        resp = client.post("/api/bpe/train", json={"num_merges": 1})
+        assert resp.status_code == 422

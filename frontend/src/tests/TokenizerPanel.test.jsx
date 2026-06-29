@@ -194,10 +194,10 @@ describe('TokenizerPanel — review panel', () => {
     expect(screen.getAllByText('xyzzyquux').length).toBeGreaterThan(0);
   });
 
-  it('shows "Approve & Add Tokens" button in review panel', () => {
+  it('shows "Process All Tokens" button in review panel', () => {
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
-    expect(screen.getByRole('button', { name: /approve & add/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /process all tokens/i })).toBeInTheDocument();
   });
 
   it('calls /api/vocab/add with the unknown tokens on approve', async () => {
@@ -215,7 +215,7 @@ describe('TokenizerPanel — review panel', () => {
 
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} onTokensAdded={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
-    fireEvent.click(screen.getByRole('button', { name: /approve & add/i }));
+    fireEvent.click(screen.getByRole('button', { name: /process all tokens/i }));
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -244,7 +244,7 @@ describe('TokenizerPanel — review panel', () => {
     const onTokensAdded = vi.fn();
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} onTokensAdded={onTokensAdded} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
-    fireEvent.click(screen.getByRole('button', { name: /approve & add/i }));
+    fireEvent.click(screen.getByRole('button', { name: /process all tokens/i }));
 
     await waitFor(() => {
       expect(onTokensAdded).toHaveBeenCalled();
@@ -266,7 +266,7 @@ describe('TokenizerPanel — review panel', () => {
 
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} onTokensAdded={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
-    fireEvent.click(screen.getByRole('button', { name: /approve & add/i }));
+    fireEvent.click(screen.getByRole('button', { name: /process all tokens/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/token\(s\) rejected/i)).toBeInTheDocument();
