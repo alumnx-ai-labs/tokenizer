@@ -101,23 +101,23 @@ export default function App() {
         <p style={{ maxWidth: '720px', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.7 }}>
           Language models process text as <strong style={{ color: 'var(--text-primary)' }}>tokens</strong> — common sequences of characters.
           Enter any text below to compare how a{' '}
-          <strong style={{ color: '#5c8fd9' }}>Simple regex tokeniser</strong> (vocabulary built from{' '}
+          <strong style={{ color: '#4caf50' }}>Simple regex tokeniser</strong> (vocabulary built from{' '}
           <em>The Verdict</em> by Edith Wharton) handles it versus{' '}
-          <strong style={{ color: '#9c7dce' }}>TikToken</strong> — OpenAI's production BPE tokeniser.
+          <strong style={{ color: '#26a69a' }}>TikToken</strong> — OpenAI's production BPE tokeniser.
         </p>
         {vocabInfo && (
           <div style={{ display: 'flex', gap: '12px', marginTop: '14px', flexWrap: 'wrap' }}>
             <span style={{
               padding: '4px 12px', borderRadius: '20px',
-              background: '#1a2a3f', border: '1px solid #5c8fd9',
-              fontSize: '12px', color: '#5c8fd9',
+              background: '#1a3a1a', border: '1px solid #4caf50',
+              fontSize: '12px', color: '#4caf50',
             }}>
               Simple vocab: {vocabInfo.simple_vocab_size.toLocaleString()} tokens
             </span>
             <span style={{
               padding: '4px 12px', borderRadius: '20px',
-              background: '#2a1a3f', border: '1px solid #9c7dce',
-              fontSize: '12px', color: '#9c7dce',
+              background: '#1a3a30', border: '1px solid #26a69a',
+              fontSize: '12px', color: '#26a69a',
             }}>
               TikToken ({vocabInfo.tiktoken_encoding}): {vocabInfo.tiktoken_vocab_size.toLocaleString()} tokens
             </span>
@@ -173,11 +173,11 @@ export default function App() {
                   <strong style={{ color: 'var(--text-primary)' }}>{result.character_count}</strong> characters
                 </span>
                 <span style={{ color: 'var(--border)' }}>·</span>
-                <span style={{ fontSize: '13px', color: '#5c8fd9' }}>
+                <span style={{ fontSize: '13px', color: '#4caf50' }}>
                   <strong>{result.simple.token_count}</strong> simple tokens
                 </span>
                 <span style={{ color: 'var(--border)' }}>·</span>
-                <span style={{ fontSize: '13px', color: '#9c7dce' }}>
+                <span style={{ fontSize: '13px', color: '#26a69a' }}>
                   <strong>{result.tiktoken.token_count}</strong> TikToken tokens
                 </span>
               </>
@@ -262,9 +262,9 @@ export default function App() {
         }}>
           <strong style={{ color: 'var(--text-primary)' }}>Comparison insight: </strong>
           The simple tokeniser produced{' '}
-          <strong style={{ color: '#5c8fd9' }}>{result.simple.token_count} tokens</strong>
+          <strong style={{ color: '#4caf50' }}>{result.simple.token_count} tokens</strong>
           {' '}vs TikToken's{' '}
-          <strong style={{ color: '#9c7dce' }}>{result.tiktoken.token_count} tokens</strong>
+          <strong style={{ color: '#26a69a' }}>{result.tiktoken.token_count} tokens</strong>
           {' '}for {result.character_count} characters.
           {result.simple.tokens.filter(t => t.is_unk).length > 0 && (
             <span>
