@@ -61,7 +61,7 @@ function TokenIdPill({ token, id, isUnk, index }) {
 }
 
 export default function TokenizerPanel({ result, isSimple }) {
-  const accentColor = isSimple ? '#5c8fd9' : '#9c7dce';
+  const accentColor = isSimple ? '#4caf50' : '#26a69a';
   const unkCount = result ? result.tokens.filter(t => t.is_unk).length : 0;
 
   return (
