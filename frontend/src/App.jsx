@@ -23,16 +23,32 @@ export default function App() {
   const [error, setError] = useState(null);
   const [vocabInfo, setVocabInfo] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [reviewQueue, setReviewQueue] = useState([]);
+  const [reviewResult, setReviewResult] = useState(null);
   const debouncedText = useDebounce(text, 300);
   const abortRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const fetchReviewQueue = useCallback(() => {
+    fetch(`${API}/api/vocab/review-queue`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setReviewQueue(data);
+        } else {
+          setReviewQueue([]);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch(`${API}/api/vocab-info`)
       .then(r => r.json())
       .then(setVocabInfo)
       .catch(() => {});
-  }, []);
+    fetchReviewQueue();
+  }, [fetchReviewQueue]);
 
   useEffect(() => {
     if (!debouncedText.trim()) {
@@ -122,6 +138,7 @@ export default function App() {
       .then(r => r.json())
       .then(setVocabInfo)
       .catch(() => {});
+    fetchReviewQueue();
   };
 
   const handleExample = () => {
@@ -352,6 +369,167 @@ export default function App() {
           )}
         </div>
       )}
+      {/* ── Review Queue Panel ── */}
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        padding: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '18px' }}>📋</span>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Vocabulary Review Queue
+              </h3>
+              {reviewQueue.length > 0 && (
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                }}>
+                  {reviewQueue.length} pending
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Submit unknown tokens to this queue to review their Tiktoken compatibility.
+              Admitted tokens will be added to the Simple Tokenizer's vocabulary.
+            </p>
+          </div>
+          {reviewQueue.length > 0 && (
+            <button
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const res = await fetch(`${API}/api/vocab/review-process`, {
+                    method: 'POST',
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    setReviewResult({
+                      admitted: data.admitted_count,
+                      rejected: data.rejected_count,
+                    });
+                    handleTokensAdded();
+                  }
+                } catch (e) {
+                  setError('Failed to process review queue.');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              style={{
+                padding: '8px 18px',
+                background: 'linear-gradient(135deg, #2b6cb0 0%, #1a365d 100%)',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 600,
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
+                transition: 'transform 0.15s, opacity 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+            >
+              Process Review Queue
+            </button>
+          )}
+        </div>
+
+        {reviewResult && (
+          <div style={{
+            padding: '12px 16px',
+            background: 'rgba(72, 187, 120, 0.15)',
+            border: '1px solid #48bb78',
+            borderRadius: 'var(--radius-sm)',
+            color: '#48bb78',
+            fontSize: '13px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+            <span>
+              <strong>Success!</strong> Admitted {reviewResult.admitted} tokens to the vocabulary, and saved {reviewResult.rejected} ineligible tokens to BPE list.
+            </span>
+            <button
+              onClick={() => setReviewResult(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#48bb78',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {reviewQueue.length > 0 ? (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            gap: '12px',
+            maxHeight: '240px',
+            overflowY: 'auto',
+            padding: '4px',
+          }}>
+            {reviewQueue.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  background: 'var(--surface-2)',
+                  border: `1px solid ${item.exists_in_tiktoken ? 'rgba(72, 187, 120, 0.3)' : 'rgba(237, 137, 54, 0.3)'}`,
+                  borderRadius: 'var(--radius-sm)',
+                }}
+              >
+                <span style={{ fontFamily: 'monospace', fontSize: '13px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+                  {item.token}
+                </span>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  background: item.exists_in_tiktoken ? 'rgba(72, 187, 120, 0.15)' : 'rgba(237, 137, 54, 0.15)',
+                  color: item.exists_in_tiktoken ? '#48bb78' : '#ed8936',
+                  border: `1px solid ${item.exists_in_tiktoken ? '#48bb78' : '#ed8936'}`,
+                }}>
+                  {item.exists_in_tiktoken ? 'Admittable' : 'BPE Candidate'}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{
+            padding: '24px',
+            textAlign: 'center',
+            color: 'var(--text-muted)',
+            fontSize: '13px',
+            border: '1px dashed var(--border)',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--surface-2)',
+          }}>
+            No tokens in the review queue. Upload a file or type text and submit unknown tokens for review.
+          </div>
+        )}
+      </div>
 
       {/* ── Footer ── */}
       <footer style={{

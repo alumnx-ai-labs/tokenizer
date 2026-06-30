@@ -178,48 +178,48 @@ describe('TokenizerPanel — review panel', () => {
   it('clicking "Review New Tokens" opens the review panel', () => {
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
-    expect(screen.getByText(/will be added to the vocabulary/i)).toBeInTheDocument();
+    expect(screen.getByText(/will be submitted for review/i)).toBeInTheDocument();
   });
-
+ 
   it('clicking "Cancel" closes the review panel', () => {
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
-    expect(screen.queryByText(/will be added to the vocabulary/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/will be submitted for review/i)).not.toBeInTheDocument();
   });
-
+ 
   it('lists unknown words in the review panel', () => {
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
     expect(screen.getAllByText('xyzzyquux').length).toBeGreaterThan(0);
   });
-
-  it('shows "Approve & Add Tokens" button in review panel', () => {
+ 
+  it('shows "Submit for Review" button in review panel', () => {
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
-    expect(screen.getByRole('button', { name: /approve & add/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /submit for review/i })).toBeInTheDocument();
   });
-
-  it('calls /api/vocab/add with the unknown tokens on approve', async () => {
+ 
+  it('calls /api/vocab/submit with the unknown tokens on approve', async () => {
     vi.stubGlobal('fetch', vi.fn(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({
           status: 'success',
-          added_count: 1,
-          new_vocab_size: 17577,
+          submitted_count: 1,
+          queue_size: 1,
           rejected_tokens: [],
         }),
       })
     ));
-
+ 
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} onTokensAdded={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
-    fireEvent.click(screen.getByRole('button', { name: /approve & add/i }));
-
+    fireEvent.click(screen.getByRole('button', { name: /submit for review/i }));
+ 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/vocab/add'),
+        expect.stringContaining('/api/vocab/submit'),
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('xyzzyquux'),
@@ -227,47 +227,47 @@ describe('TokenizerPanel — review panel', () => {
       );
     });
   });
-
+ 
   it('calls onTokensAdded callback after successful add', async () => {
     vi.stubGlobal('fetch', vi.fn(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({
           status: 'success',
-          added_count: 1,
-          new_vocab_size: 17577,
+          submitted_count: 1,
+          queue_size: 1,
           rejected_tokens: [],
         }),
       })
     ));
-
+ 
     const onTokensAdded = vi.fn();
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} onTokensAdded={onTokensAdded} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
-    fireEvent.click(screen.getByRole('button', { name: /approve & add/i }));
-
+    fireEvent.click(screen.getByRole('button', { name: /submit for review/i }));
+ 
     await waitFor(() => {
       expect(onTokensAdded).toHaveBeenCalled();
     });
   });
-
+ 
   it('shows rejected tokens when the backend rejects multi-token words', async () => {
     vi.stubGlobal('fetch', vi.fn(() =>
       Promise.resolve({
         ok: true,
         json: () => Promise.resolve({
           status: 'success',
-          added_count: 0,
-          new_vocab_size: 17576,
+          submitted_count: 0,
+          queue_size: 0,
           rejected_tokens: ['xyzzyquux'],
         }),
       })
     ));
-
+ 
     render(<TokenizerPanel result={simpleResultWithUnk} isSimple={true} onTokensAdded={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /review new tokens/i }));
-    fireEvent.click(screen.getByRole('button', { name: /approve & add/i }));
-
+    fireEvent.click(screen.getByRole('button', { name: /submit for review/i }));
+ 
     await waitFor(() => {
       expect(screen.getByText(/token\(s\) rejected/i)).toBeInTheDocument();
     });

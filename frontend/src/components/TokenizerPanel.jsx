@@ -71,20 +71,21 @@ export default function TokenizerPanel({ result, isSimple, onTokensAdded }) {
   const unkCount = unkTokens.length;
   const uniqueUnks = Array.from(new Set(unkTokens.map(t => t.token)));
 
-  const handleAddTokens = async () => {
+  const handleSubmitForReview = async () => {
     setSubmitting(true);
     setRejectedTokens([]);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/vocab/add`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/vocab/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokens: uniqueUnks })
       });
       if (res.ok) {
         const data = await res.json();
+        // Keep support for rejected_tokens if returned, but usually we just submit
         if (data.rejected_tokens && data.rejected_tokens.length > 0) {
           setRejectedTokens(data.rejected_tokens);
-          if (data.added_count > 0 && onTokensAdded) onTokensAdded();
+          if (onTokensAdded) onTokensAdded();
         } else {
           setReviewing(false);
           if (onTokensAdded) onTokensAdded();
@@ -248,7 +249,7 @@ export default function TokenizerPanel({ result, isSimple, onTokensAdded }) {
           </div>
           {reviewing && (
             <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--tok-unk-fg)' }}>
-              <p style={{ marginBottom: '8px', fontWeight: 600 }}>The following new words will be added to the vocabulary:</p>
+              <p style={{ marginBottom: '8px', fontWeight: 600 }}>The following new words will be submitted for review:</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px', maxHeight: '120px', overflowY: 'auto' }}>
                 {uniqueUnks.map(word => (
                   <span key={word} style={{ padding: '2px 6px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px', fontFamily: 'monospace' }}>
@@ -257,7 +258,7 @@ export default function TokenizerPanel({ result, isSimple, onTokensAdded }) {
                 ))}
               </div>
               <button
-                onClick={handleAddTokens}
+                onClick={handleSubmitForReview}
                 disabled={submitting}
                 style={{
                   padding: '6px 12px',
@@ -271,7 +272,7 @@ export default function TokenizerPanel({ result, isSimple, onTokensAdded }) {
                   opacity: submitting ? 0.7 : 1,
                 }}
               >
-                {submitting ? 'Adding...' : 'Approve & Add Tokens'}
+                {submitting ? 'Submitting...' : 'Submit for Review'}
               </button>
 
               {rejectedTokens.length > 0 && (

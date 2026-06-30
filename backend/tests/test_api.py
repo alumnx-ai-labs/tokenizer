@@ -306,3 +306,78 @@ class TestVocabAddEndpoint:
         r2 = client.post("/api/tokenize", json={"text": "cat"})
         # After adding, it should not be UNK
         assert r2.json()["simple"]["tokens"][0]["is_unk"] is False
+
+
+# ──────────────────────────────────────────────────────────
+# Review Queue Endpoints
+# ──────────────────────────────────────────────────────────
+
+class TestVocabReviewQueue:
+    def test_submit_valid_tokens(self):
+        from main import review_queue, word_to_id
+        review_queue.clear()
+        for tok in ["apple", "banana"]:
+            if tok in word_to_id:
+                del word_to_id[tok]
+        
+        resp = client.post("/api/vocab/submit", json={"tokens": ["apple", "banana"]})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "success"
+        assert data["submitted_count"] == 2
+        assert data["queue_size"] == 2
+        
+    def test_submit_empty_tokens(self):
+        resp = client.post("/api/vocab/submit", json={"tokens": []})
+        assert resp.status_code == 200
+        assert resp.json()["submitted_count"] == 0
+
+    def test_get_review_queue(self):
+        from main import review_queue, word_to_id
+        review_queue.clear()
+        for tok in ["cat", "supercalifragilistic"]:
+            if tok in word_to_id:
+                del word_to_id[tok]
+        
+        # 'cat' is a single TikToken token
+        # 'supercalifragilistic' is multiple TikToken tokens
+        client.post("/api/vocab/submit", json={"tokens": ["cat", "supercalifragilistic"]})
+        
+        resp = client.get("/api/vocab/review-queue")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 2
+        
+        cat_item = next(item for item in data if item["token"] == "cat")
+        super_item = next(item for item in data if item["token"] == "supercalifragilistic")
+        
+        assert cat_item["exists_in_tiktoken"] is True
+        assert super_item["exists_in_tiktoken"] is False
+
+    def test_process_review_queue(self):
+        from main import review_queue, word_to_id
+        review_queue.clear()
+        
+        for tok in ["dog", "supercalifragilistic"]:
+            if tok in word_to_id:
+                del word_to_id[tok]
+                
+        client.post("/api/vocab/submit", json={"tokens": ["dog", "supercalifragilistic"]})
+        
+        resp = client.post("/api/vocab/review-process")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "success"
+        assert data["admitted_count"] == 1
+        assert data["rejected_count"] == 1
+        
+        assert len(review_queue) == 0
+        
+        resp_tok = client.post("/api/tokenize", json={"text": "dog"})
+        assert resp_tok.json()["simple"]["tokens"][0]["is_unk"] is False
+        
+        from main import PENDING_BPE_PATH
+        assert os.path.exists(PENDING_BPE_PATH)
+        with open(PENDING_BPE_PATH, "r", encoding="utf-8") as f:
+            pending_content = f.read()
+        assert "supercalifragilistic" in pending_content

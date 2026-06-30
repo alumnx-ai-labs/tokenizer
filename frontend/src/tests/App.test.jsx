@@ -318,3 +318,78 @@ describe('App — error handling', () => {
     expect(screen.queryByText(/could not reach the backend/i)).not.toBeInTheDocument();
   });
 });
+
+
+// ─────────────────────────────────────────────
+// Review Queue Panel
+// ─────────────────────────────────────────────
+
+describe('App — Vocabulary Review Queue', () => {
+  it('renders review queue dashboard and fetches pending queue items', async () => {
+    const mockQueue = [
+      { token: 'cat', exists_in_tiktoken: true },
+      { token: 'supercalifragilistic', exists_in_tiktoken: false },
+    ];
+    
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (url.includes('vocab-info')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(MOCK_VOCAB) });
+      }
+      if (url.includes('review-queue')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQueue) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    }));
+    
+    render(<App />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Vocabulary Review Queue')).toBeInTheDocument();
+      expect(screen.getByText('2 pending')).toBeInTheDocument();
+      expect(screen.getByText('cat')).toBeInTheDocument();
+      expect(screen.getByText('supercalifragilistic')).toBeInTheDocument();
+      expect(screen.getByText('Admittable')).toBeInTheDocument();
+      expect(screen.getByText('BPE Candidate')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /process review queue/i })).toBeInTheDocument();
+    });
+  });
+
+  it('clicking "Process Review Queue" calls the process API and updates the view', async () => {
+    const mockQueue = [
+      { token: 'cat', exists_in_tiktoken: true },
+    ];
+    
+    const fetchSpy = vi.fn((url) => {
+      if (url.includes('vocab-info')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(MOCK_VOCAB) });
+      }
+      if (url.includes('review-queue')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockQueue) });
+      }
+      if (url.includes('review-process')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            status: 'success',
+            admitted_count: 1,
+            rejected_count: 0,
+            new_vocab_size: 17577,
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+    
+    vi.stubGlobal('fetch', fetchSpy);
+    
+    render(<App />);
+    
+    await waitFor(() => screen.getByRole('button', { name: /process review queue/i }));
+    fireEvent.click(screen.getByRole('button', { name: /process review queue/i }));
+    
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/api/vocab/review-process'), expect.any(Object));
+      expect(screen.getByText(/admitted 1 tokens to the vocabulary/i)).toBeInTheDocument();
+    });
+  });
+});

@@ -42,6 +42,7 @@ PENDING_BPE_PATH = os.path.join(os.path.dirname(__file__), "pending_bpe_tokens.t
 word_to_id: dict[str, int] = {}
 id_to_word: dict[int, str] = {}
 vocab_size_simple: int = 0
+review_queue: set[str] = set()
 
 
 def _tokenize_regex(text: str) -> list[str]:
@@ -240,3 +241,76 @@ def add_tokens(req: AddTokensRequest):
         "new_vocab_size": vocab_size_simple,
         "rejected_tokens": rejected_tokens
     }
+
+
+class ReviewQueueItem(BaseModel):
+    token: str
+    exists_in_tiktoken: bool
+
+
+class ProcessReviewResponse(BaseModel):
+    status: str
+    admitted_count: int
+    rejected_count: int
+    new_vocab_size: int
+
+
+@app.post("/api/vocab/submit")
+def submit_tokens_for_review(req: AddTokensRequest):
+    global review_queue
+    added = 0
+    for token in req.tokens:
+        if token and token not in word_to_id and token not in review_queue:
+            review_queue.add(token)
+            added += 1
+    return {"status": "success", "submitted_count": added, "queue_size": len(review_queue)}
+
+
+@app.get("/api/vocab/review-queue", response_model=list[ReviewQueueItem])
+def get_review_queue():
+    items = []
+    for token in sorted(review_queue):
+        tt_ids = tiktoken_enc.encode(token)
+        exists_in_tiktoken = (len(tt_ids) == 1)
+        items.append(ReviewQueueItem(token=token, exists_in_tiktoken=exists_in_tiktoken))
+    return items
+
+
+@app.post("/api/vocab/review-process", response_model=ProcessReviewResponse)
+def process_review_queue():
+    global word_to_id, id_to_word, vocab_size_simple, review_queue
+    admitted_count = 0
+    rejected_tokens = []
+    
+    for token in sorted(review_queue):
+        tt_ids = tiktoken_enc.encode(token)
+        if len(tt_ids) == 1:
+            if token not in word_to_id:
+                new_id = len(word_to_id)
+                word_to_id[token] = new_id
+                id_to_word[new_id] = token
+                vocab_size_simple += 1
+                admitted_count += 1
+        else:
+            rejected_tokens.append(token)
+            
+    if rejected_tokens:
+        existing_pending = set()
+        if os.path.exists(PENDING_BPE_PATH):
+            with open(PENDING_BPE_PATH, "r", encoding="utf-8") as f:
+                existing_pending = set(line.strip() for line in f)
+        
+        with open(PENDING_BPE_PATH, "a", encoding="utf-8") as f:
+            for rt in rejected_tokens:
+                if rt not in existing_pending:
+                    f.write(rt + "\n")
+                    existing_pending.add(rt)
+                    
+    review_queue.clear()
+    
+    return ProcessReviewResponse(
+        status="success",
+        admitted_count=admitted_count,
+        rejected_count=len(rejected_tokens),
+        new_vocab_size=vocab_size_simple
+    )
