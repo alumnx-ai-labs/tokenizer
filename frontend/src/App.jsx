@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TokenizerPanel from './components/TokenizerPanel';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 import './index.css';
 
 const API = import.meta.env.VITE_API_URL || '';
@@ -36,16 +37,16 @@ export default function App() {
 
   useEffect(() => {
     if (!debouncedText.trim()) {
-      setResult(null);
-      setError(null);
       return;
     }
 
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
 
-    setLoading(true);
-    setError(null);
+    Promise.resolve().then(() => {
+      setLoading(true);
+      setError(null);
+    });
 
     fetch(`${API}/api/tokenize`, {
       method: 'POST',
@@ -109,7 +110,7 @@ export default function App() {
       } else {
         setError('Could not extract text from the file.');
       }
-    } catch (err) {
+    } catch {
       setError('Error uploading file. Make sure the backend is running.');
     } finally {
       setLoading(false);
@@ -187,7 +188,14 @@ export default function App() {
       }}>
         <textarea
           value={text}
-          onChange={e => setText(e.target.value)}
+          onChange={e => {
+            const val = e.target.value;
+            setText(val);
+            if (!val.trim()) {
+              setResult(null);
+              setError(null);
+            }
+          }}
           placeholder="Enter text here to see how it gets tokenised…"
           rows={6}
           style={{
@@ -325,6 +333,9 @@ export default function App() {
         <TokenizerPanel result={result?.simple ?? null} isSimple={true} onTokensAdded={handleTokensAdded} />
         <TokenizerPanel result={result?.tiktoken ?? null} isSimple={false} />
       </div>
+
+      {/* ── Analytics Dashboard ── */}
+      {result && <AnalyticsDashboard result={result} />}
 
       {/* ── Comparison insight ── */}
       {result && (
