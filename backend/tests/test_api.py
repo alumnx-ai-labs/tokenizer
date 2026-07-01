@@ -12,6 +12,15 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 
+PENDING_BPE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "pending_bpe_tokens.txt")
+
+
+@pytest.fixture(autouse=True)
+def clear_pending_bpe_file():
+    if os.path.exists(PENDING_BPE_PATH):
+        os.remove(PENDING_BPE_PATH)
+
+
 client = TestClient(app)
 
 
@@ -306,3 +315,20 @@ class TestVocabAddEndpoint:
         r2 = client.post("/api/tokenize", json={"text": "cat"})
         # After adding, it should not be UNK
         assert r2.json()["simple"]["tokens"][0]["is_unk"] is False
+
+    def test_rejected_tokens_saved_to_pending_bpe(self):
+        token = "supercalifragilistic"
+        resp = client.post("/api/vocab/add", json={"tokens": [token]})
+        assert resp.status_code == 200
+        assert token in resp.json()["rejected_tokens"]
+        pending = client.get("/api/pending-bpe-tokens").json()
+        assert pending["pending_count"] >= 1
+        assert token in pending["pending_tokens"]
+
+    def test_pending_bpe_tokens_endpoint_returns_list(self):
+        resp = client.get("/api/pending-bpe-tokens")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "pending_count" in data
+        assert "pending_tokens" in data
+        assert isinstance(data["pending_tokens"], list)

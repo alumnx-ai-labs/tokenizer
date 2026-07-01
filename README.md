@@ -22,6 +22,12 @@ Added a GitHub Actions workflow (`.github/workflows/backend-tests.yml`) that aut
 ### File Upload & Pending BPE Tokens
 Added file upload support to the API. Tokens rejected during tokenization are saved to `backend/pending_bpe_tokens.txt` for future BPE (Byte Pair Encoding) vocabulary expansion.
 
+### Pending BPE token tracking
+The backend now exposes a new endpoint:
+- `GET /api/pending-bpe-tokens`
+
+This returns the list of tokens that could not be added as a single TikToken BPE token and are pending future BPE vocabulary expansion.
+
 ## Corpus Sources
 
 The Simple Tokenizer's vocabulary has been expanded to 17,576 tokens using the following corpus sources:

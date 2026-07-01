@@ -22,16 +22,30 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [vocabInfo, setVocabInfo] = useState(null);
+  const [pendingBpe, setPendingBpe] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const debouncedText = useDebounce(text, 300);
   const abortRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const loadPendingBpeTokens = async () => {
+    try {
+      const response = await fetch(`${API}/api/pending-bpe-tokens`);
+      if (!response.ok) return;
+      const data = await response.json();
+      setPendingBpe(data);
+    } catch (err) {
+      // ignore network failures for the card
+    }
+  };
 
   useEffect(() => {
     fetch(`${API}/api/vocab-info`)
       .then(r => r.json())
       .then(setVocabInfo)
       .catch(() => {});
+
+    loadPendingBpeTokens();
   }, []);
 
   useEffect(() => {
@@ -122,6 +136,11 @@ export default function App() {
       .then(r => r.json())
       .then(setVocabInfo)
       .catch(() => {});
+    loadPendingBpeTokens();
+  };
+
+  const handlePendingRefresh = () => {
+    loadPendingBpeTokens();
   };
 
   const handleExample = () => {
@@ -175,7 +194,54 @@ export default function App() {
             </span>
           </div>
         )}
-      </header>
+        {pendingBpe && pendingBpe.pending_count > 0 && (
+          <div style={{
+            marginTop: '14px',
+            padding: '14px',
+            borderRadius: '18px',
+            background: '#1f1f2a',
+            border: '1px solid #5c8fd9',
+            color: '#d0d6ff',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+              <div>
+                <strong>Pending BPE tokens:</strong> {pendingBpe.pending_count}
+              </div>
+              <div style={{ fontSize: '12px', color: '#b0b8ff' }}>
+                These tokens were rejected by TikToken BPE and are ready for future vocabulary expansion.
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {pendingBpe.pending_tokens.slice(0, 10).map(token => (
+                  <span key={token} style={{ padding: '6px 10px', background: '#11131f', borderRadius: '999px', fontFamily: 'monospace', fontSize: '12px' }}>
+                    {token}
+                  </span>
+                ))}
+                {pendingBpe.pending_count > 10 && (
+                  <span style={{ padding: '6px 10px', background: '#11131f', borderRadius: '999px', fontFamily: 'monospace', fontSize: '12px' }}>
+                    +{pendingBpe.pending_count - 10} more
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={handlePendingRefresh}
+                style={{
+                  padding: '8px 14px',
+                  background: '#5c8fd9',
+                  border: 'none',
+                  borderRadius: '999px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        )}      </header>
 
       {/* ── Input Area ── */}
       <div style={{

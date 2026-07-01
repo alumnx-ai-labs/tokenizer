@@ -44,6 +44,13 @@ id_to_word: dict[int, str] = {}
 vocab_size_simple: int = 0
 
 
+def _load_pending_bpe_tokens() -> list[str]:
+    if not os.path.exists(PENDING_BPE_PATH):
+        return []
+    with open(PENDING_BPE_PATH, "r", encoding="utf-8") as f:
+        return [line.strip() for line in f if line.strip()]
+
+
 def _tokenize_regex(text: str) -> list[str]:
     tokens = re.split(r'([,.:;?_!"()\']|--|\s)', text)
     return [t.strip() for t in tokens if t.strip()]
@@ -238,5 +245,15 @@ def add_tokens(req: AddTokensRequest):
         "status": "success", 
         "added_count": added_count, 
         "new_vocab_size": vocab_size_simple,
-        "rejected_tokens": rejected_tokens
+        "rejected_tokens": rejected_tokens,
+        "pending_bpe_tokens": _load_pending_bpe_tokens(),
+    }
+
+
+@app.get("/api/pending-bpe-tokens")
+def pending_bpe_tokens():
+    tokens = _load_pending_bpe_tokens()
+    return {
+        "pending_count": len(tokens),
+        "pending_tokens": tokens,
     }
